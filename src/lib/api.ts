@@ -20,8 +20,11 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
 
 // ==================== SPOTIFY AUTH ====================
 
-export async function getSpotifyLoginUrl(): Promise<{ auth_url: string }> {
-  return fetchApi("/login");
+export async function getSpotifyLoginUrl(clientRedirectUri?: string): Promise<{ auth_url: string }> {
+  const search = clientRedirectUri
+    ? `?client_redirect_uri=${encodeURIComponent(clientRedirectUri)}`
+    : "";
+  return fetchApi(`/login${search}`);
 }
 
 // ==================== SPOTIFY USER ====================

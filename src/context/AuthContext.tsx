@@ -1,5 +1,6 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import { getUserProfile, registerUser, type SpotifyUser, type AppUser } from "../lib/api";
+import { checkTidalAuth, getUserProfile, registerUser, type SpotifyUser, type AppUser } from "../lib/api";
 
 interface AuthState {
   spotifyCode: string | null;
@@ -21,13 +22,24 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+function parseStoredTidalUser(value: string | null): { id: string; name: string } | null {
+  if (!value) return null;
+
+  try {
+    return JSON.parse(value) as { id: string; name: string };
+  } catch {
+    localStorage.removeItem("tidal_user");
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     spotifyCode: localStorage.getItem("spotify_code"),
     spotifyUser: null,
     appUser: null,
     tidalSessionId: localStorage.getItem("tidal_session_id"),
-    tidalUser: null,
+    tidalUser: parseStoredTidalUser(localStorage.getItem("tidal_user")),
     isLoading: true,
   });
 
@@ -55,7 +67,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       setState((prev) => ({ ...prev, isLoading: false }));
     }
-  }, [state.spotifyCode]);
+  }, [state.spotifyCode, state.spotifyUser]);
+
+  useEffect(() => {
+    const sessionId = state.tidalSessionId;
+    if (!sessionId) return;
+
+    checkTidalAuth(sessionId)
+      .then((status) => {
+        if (status.authenticated && status.user) {
+          localStorage.setItem("tidal_user", JSON.stringify(status.user));
+          setState((prev) => ({ ...prev, tidalUser: status.user ?? null }));
+          return;
+        }
+
+        localStorage.removeItem("tidal_session_id");
+        localStorage.removeItem("tidal_user");
+        setState((prev) => ({ ...prev, tidalSessionId: null, tidalUser: null }));
+      })
+      .catch(() => {
+        localStorage.removeItem("tidal_session_id");
+        localStorage.removeItem("tidal_user");
+        setState((prev) => ({ ...prev, tidalSessionId: null, tidalUser: null }));
+      });
+  }, [state.tidalSessionId]);
 
   const setSpotifyCode = (code: string) => {
     localStorage.setItem("spotify_code", code);
@@ -64,12 +99,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setTidalSession = (sessionId: string, user: { id: string; name: string }) => {
     localStorage.setItem("tidal_session_id", sessionId);
+    localStorage.setItem("tidal_user", JSON.stringify(user));
     setState((prev) => ({ ...prev, tidalSessionId: sessionId, tidalUser: user }));
   };
 
   const logout = () => {
     localStorage.removeItem("spotify_code");
     localStorage.removeItem("tidal_session_id");
+    localStorage.removeItem("tidal_user");
     setState({
       spotifyCode: null,
       spotifyUser: null,

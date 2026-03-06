@@ -1,69 +1,89 @@
-# React + TypeScript + Vite
+# Playlist Mover Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite web client for the playlist migration workspace. This is the main UI for:
 
-Currently, two official plugins are available:
+- connecting Spotify
+- connecting Tidal
+- migrating playlists and liked songs between Spotify and Tidal
+- deleting and merging Tidal playlists
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Stack
 
-## Expanding the ESLint configuration
+- React 19
+- TypeScript
+- Vite
+- React Router
+- Tailwind CSS
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Prerequisites
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Node.js 20+
+- npm
+- The backend from `playlist-mover-server` running locally or deployed on Railway
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+## Environment Variables
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Create `.env.local`:
+
+```bash
+VITE_API_URL=http://127.0.0.1:5000
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+If you want to point the client at Railway instead, set `VITE_API_URL` to your Railway backend URL.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Run Locally
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
+```
+
+The app will usually start at `http://localhost:5173`.
+
+## Required Backend Configuration
+
+The backend must be configured with:
+
+- Spotify OAuth credentials
+- `FRONTEND_URL=http://localhost:5173`
+- `FRONTEND_REDIRECT=http://localhost:5173/callback`
+
+Spotify should redirect to the backend callback URL, not directly to the frontend:
+
+```text
+http://127.0.0.1:5000/callback
+```
+
+The backend then forwards the auth code back to the frontend callback route.
+
+## Useful Commands
+
+```bash
+npm run dev
+npm run build
+npm run lint
+npm run test
+```
+
+## Current Notes
+
+- Tidal sessions are now restored on refresh by re-validating the saved session with the backend.
+- Merge and delete flows depend on the backend Tidal session remaining valid.
+- This client expects the backend to allow credentialed requests.
+
+## Local Smoke Test
+
+1. Start `playlist-mover-server`.
+2. Start this client with `npm run dev`.
+3. Connect Spotify from the landing page.
+4. Open `Settings` and connect Tidal.
+5. Open `Playlists`.
+6. Select a Tidal playlist and try delete/merge actions.
+
+## Testing
+
+Integration-style coverage was added for auth session restoration:
+
+```bash
+npm run test
 ```

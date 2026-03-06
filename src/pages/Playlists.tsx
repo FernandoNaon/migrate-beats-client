@@ -1189,7 +1189,9 @@ export default function Playlists() {
                             {" "}{mergeResult.tracks_skipped} duplicate tracks were skipped.
                           </span>
                         )}
-                        {" "}The source playlist has been deleted.
+                        {mergeResult.source_deleted
+                          ? " The source playlist has been deleted."
+                          : " The source playlist still needs to be deleted manually."}
                       </p>
                     ) : (
                       <p style={{ color: 'var(--coral)' }}>{mergeResult.error}</p>
