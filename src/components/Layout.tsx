@@ -1,11 +1,12 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, ListMusic, Heart, Settings, LogOut, Disc3 } from "lucide-react";
+import { LayoutDashboard, ArrowRightLeft, Heart, Settings, LogOut, Disc3, LayoutGrid } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import ThemeToggle from "./ThemeToggle";
 
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/playlists", icon: ListMusic, label: "Playlists" },
+  { to: "/migrate", icon: ArrowRightLeft, label: "Migrate" },
+  { to: "/playlist-manager", icon: LayoutGrid, label: "Manager" },
   { to: "/liked-songs", icon: Heart, label: "Liked Songs" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];

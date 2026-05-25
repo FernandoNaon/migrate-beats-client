@@ -21,6 +21,7 @@ import {
   fetchPlaylists,
   migrateTracks,
   migrateTidalTracks,
+  moveLikedToPlaylist,
   type LikedTrack,
   type TidalLikedTrack,
   type MigrationResult,
@@ -28,6 +29,7 @@ import {
   type TidalPlaylist,
   type Playlist,
 } from "../lib/api";
+import PlaylistPickerModal from "../components/PlaylistPickerModal";
 
 export default function LikedSongs() {
   const {
@@ -74,6 +76,70 @@ export default function LikedSongs() {
   const [tidalPlaylists, setTidalPlaylists] = useState<TidalPlaylist[]>([]);
   const [spotifyPlaylists, setSpotifyPlaylists] = useState<Playlist[]>([]);
   const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(false);
+
+  // Move-to-playlist (Spotify-only) state
+  const [showMovePicker, setShowMovePicker] = useState(false);
+  const [movePickerSearch, setMovePickerSearch] = useState("");
+  const [isMoving, setIsMoving] = useState(false);
+  const [moveToast, setMoveToast] = useState<{ kind: "info" | "error"; msg: string } | null>(null);
+  const altKeyRef = useRef(false);
+  const [altKeyDown, setAltKeyDown] = useState(false);
+
+  useEffect(() => {
+    function down(e: KeyboardEvent) {
+      if (e.altKey && !altKeyRef.current) {
+        altKeyRef.current = true;
+        setAltKeyDown(true);
+      }
+    }
+    function up(e: KeyboardEvent) {
+      if (!e.altKey && altKeyRef.current) {
+        altKeyRef.current = false;
+        setAltKeyDown(false);
+      }
+    }
+    function blur() {
+      altKeyRef.current = false;
+      setAltKeyDown(false);
+    }
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    window.addEventListener("blur", blur);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", blur);
+    };
+  }, []);
+
+  async function handleMoveToPlaylist(target: Playlist, copyOnly: boolean) {
+    if (!spotifyCode || selectedTracks.size === 0) return;
+    setIsMoving(true);
+    const ids = Array.from(selectedTracks);
+    try {
+      const result = await moveLikedToPlaylist(spotifyCode, target.id, ids, copyOnly);
+      // Update local state: if we actually moved, remove from liked list
+      if (!copyOnly) {
+        setSpotifyTracks((prev) => prev.filter((t) => !selectedTracks.has(t.id)));
+        setSpotifyTotalTracks((t) => Math.max(0, t - result.removed));
+      }
+      setSelectedTracks(new Set());
+      setShowMovePicker(false);
+      setMovePickerSearch("");
+      setMoveToast({
+        kind: "info",
+        msg: copyOnly
+          ? `Copied ${result.added} track${result.added !== 1 ? "s" : ""} to "${target.name}" (kept in Liked).`
+          : `Moved ${result.added} track${result.added !== 1 ? "s" : ""} to "${target.name}".`,
+      });
+      setTimeout(() => setMoveToast(null), 4500);
+    } catch (e: any) {
+      setMoveToast({ kind: "error", msg: `Couldn't move: ${e.message}` });
+      setTimeout(() => setMoveToast(null), 4500);
+    } finally {
+      setIsMoving(false);
+    }
+  }
 
   // Computed values based on source
   const tracks = source === "spotify" ? spotifyTracks : tidalTracks;
@@ -827,6 +893,20 @@ export default function LikedSongs() {
               )}
             </div>
 
+            {/* Move-to-playlist (Spotify source only — Spotify liked → Spotify playlist) */}
+            {source === "spotify" && (
+              <button
+                onClick={() => setShowMovePicker(true)}
+                disabled={isMoving || selectedTracks.size === 0}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50"
+                style={{ background: "white", border: "1px solid var(--border-light)", color: "var(--text-dark)" }}
+                title={`Move into a Spotify playlist. Hold ⌥ Option when picking to copy instead.`}
+              >
+                {isMoving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ListMusic className="w-4 h-4" />}
+                Move to playlist…
+              </button>
+            )}
+
             {/* Migrate button - show based on destination availability */}
             {(source === "spotify" ? isTidalConnected : isSpotifyConnected) ? (
               <button
@@ -856,6 +936,57 @@ export default function LikedSongs() {
             )}
           </div>
         </div>
+      )}
+
+      {/* Move-to-playlist toast */}
+      {moveToast && (
+        <div
+          className="mb-4 flex items-center gap-2 px-4 py-2 rounded-xl text-sm"
+          style={{
+            background: moveToast.kind === "error" ? "var(--peach)" : "var(--green-pale)",
+            color: moveToast.kind === "error" ? "var(--coral)" : "var(--green-primary)",
+          }}
+        >
+          <AlertCircle className="w-4 h-4" />
+          {moveToast.msg}
+        </div>
+      )}
+
+      {/* Move-to-playlist picker */}
+      {showMovePicker && (
+        <PlaylistPickerModal
+          playlists={spotifyPlaylists}
+          loading={isLoadingPlaylists}
+          search={movePickerSearch}
+          setSearch={setMovePickerSearch}
+          title={altKeyDown ? "Copy to playlist" : "Move to playlist"}
+          onPick={(p) => handleMoveToPlaylist(p, altKeyRef.current)}
+          onClose={() => {
+            setShowMovePicker(false);
+            setMovePickerSearch("");
+          }}
+          footer={
+            <span>
+              Picking a playlist will <strong>move</strong> the selected{" "}
+              {selectedTracks.size} track{selectedTracks.size !== 1 ? "s" : ""} (remove from Liked). Hold{" "}
+              <kbd
+                className="px-1.5 py-0.5 rounded text-[10px] font-mono"
+                style={{ background: "var(--bg-warm)", border: "1px solid var(--border-light)" }}
+              >
+                ⌥ Option
+              </kbd>{" "}
+              while clicking to <strong>copy</strong> instead (keep in Liked).
+              {altKeyDown && (
+                <span
+                  className="ml-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                  style={{ background: "var(--blue-accent)", color: "white" }}
+                >
+                  COPY MODE
+                </span>
+              )}
+            </span>
+          }
+        />
       )}
 
       {/* Migration Result */}

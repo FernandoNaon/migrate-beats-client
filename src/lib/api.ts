@@ -101,12 +101,14 @@ export interface Playlist {
 
 export interface Track {
   id: string;
+  uri?: string;
   name: string;
   artist: string;
   artists: string[];
   album: string;
   duration_ms: number;
   image?: string;
+  is_local?: boolean;
 }
 
 export async function fetchPlaylists(code: string): Promise<Playlist[]> {
@@ -120,6 +122,161 @@ export async function fetchPlaylistTracks(code: string, playlistId: string): Pro
   return fetchApi("/playlist_tracks", {
     method: "POST",
     body: JSON.stringify({ code, playlist_id: playlistId }),
+  });
+}
+
+// ==================== SPOTIFY PLAYLIST MANAGEMENT ====================
+
+export interface PlaylistDetails {
+  id: string;
+  name: string;
+  snapshot_id: string;
+  image?: string;
+  owner?: string;
+  is_owner: boolean;
+  tracks_total: number;
+  tracks: Track[];
+}
+
+export async function fetchPlaylistDetails(code: string, playlistId: string): Promise<PlaylistDetails> {
+  return fetchApi("/playlist/details", {
+    method: "POST",
+    body: JSON.stringify({ code, playlist_id: playlistId }),
+  });
+}
+
+export interface CreatedPlaylist {
+  id: string;
+  name: string;
+  snapshot_id?: string;
+  image?: string;
+  owner?: string;
+  tracks_total: number;
+}
+
+export async function createSpotifyPlaylist(
+  code: string,
+  name: string,
+  description = "",
+  isPublic = false
+): Promise<CreatedPlaylist> {
+  return fetchApi("/playlist/create", {
+    method: "POST",
+    body: JSON.stringify({ code, name, description, public: isPublic }),
+  });
+}
+
+export interface MutationResult {
+  success: boolean;
+  snapshot_id?: string;
+}
+
+export async function addTracksToPlaylist(
+  code: string,
+  playlistId: string,
+  trackUris: string[],
+  position?: number
+): Promise<MutationResult & { added: number }> {
+  return fetchApi("/playlist/add_tracks", {
+    method: "POST",
+    body: JSON.stringify({ code, playlist_id: playlistId, track_uris: trackUris, position }),
+  });
+}
+
+export async function removeTracksFromPlaylist(
+  code: string,
+  playlistId: string,
+  trackUris: string[],
+  snapshotId?: string
+): Promise<MutationResult & { removed: number }> {
+  return fetchApi("/playlist/remove_tracks", {
+    method: "POST",
+    body: JSON.stringify({ code, playlist_id: playlistId, track_uris: trackUris, snapshot_id: snapshotId }),
+  });
+}
+
+export async function reorderPlaylistTracks(
+  code: string,
+  playlistId: string,
+  rangeStart: number,
+  insertBefore: number,
+  rangeLength = 1,
+  snapshotId?: string
+): Promise<MutationResult> {
+  return fetchApi("/playlist/reorder", {
+    method: "POST",
+    body: JSON.stringify({
+      code,
+      playlist_id: playlistId,
+      range_start: rangeStart,
+      insert_before: insertBefore,
+      range_length: rangeLength,
+      snapshot_id: snapshotId,
+    }),
+  });
+}
+
+export interface MoveTracksOptions {
+  code: string;
+  sourcePlaylistId: string;
+  targetPlaylistId: string;
+  trackUris: string[];
+  sourceSnapshotId?: string;
+  targetPosition?: number;
+  copyOnly?: boolean;
+}
+
+export interface MoveTracksResult {
+  success: boolean;
+  added: number;
+  removed: number;
+  source_snapshot_id?: string;
+  target_snapshot_id?: string;
+}
+
+export async function moveTracksBetweenPlaylists(opts: MoveTracksOptions): Promise<MoveTracksResult> {
+  return fetchApi("/playlist/move_tracks", {
+    method: "POST",
+    body: JSON.stringify({
+      code: opts.code,
+      source_playlist_id: opts.sourcePlaylistId,
+      target_playlist_id: opts.targetPlaylistId,
+      track_uris: opts.trackUris,
+      source_snapshot_id: opts.sourceSnapshotId,
+      target_position: opts.targetPosition,
+      copy_only: opts.copyOnly,
+    }),
+  });
+}
+
+export async function deleteSpotifyPlaylist(code: string, playlistId: string): Promise<{ success: boolean }> {
+  return fetchApi("/playlist/delete", {
+    method: "POST",
+    body: JSON.stringify({ code, playlist_id: playlistId }),
+  });
+}
+
+export interface LikedMoveResult {
+  success: boolean;
+  added: number;
+  removed: number;
+  snapshot_id?: string;
+}
+
+export async function moveLikedToPlaylist(
+  code: string,
+  targetPlaylistId: string,
+  trackIds: string[],
+  copyOnly = false
+): Promise<LikedMoveResult> {
+  return fetchApi("/liked_songs/move_to_playlist", {
+    method: "POST",
+    body: JSON.stringify({
+      code,
+      target_playlist_id: targetPlaylistId,
+      track_ids: trackIds,
+      copy_only: copyOnly,
+    }),
   });
 }
 
