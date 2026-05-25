@@ -37,7 +37,7 @@ import {
   type TrackToMigrate,
 } from "../lib/api";
 
-export default function Playlists() {
+export default function Migrate() {
   const { spotifyCode, isSpotifyConnected, tidalSessionId, isTidalConnected, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 

@@ -180,11 +180,11 @@ export default function Dashboard() {
             {stats?.playlists ?? 0} playlists • {stats?.saved_tracks ?? 0} saved tracks
           </p>
           <Link
-            to="/playlists"
+            to="/migrate"
             className="inline-flex items-center gap-2 text-sm font-medium"
             style={{ color: '#1DB954' }}
           >
-            View Playlists
+            Migrate Playlists
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -243,7 +243,7 @@ export default function Dashboard() {
                 Ready to sync your playlists from Spotify to Tidal
               </p>
               <Link
-                to="/playlists"
+                to="/migrate"
                 className="inline-flex items-center gap-2 px-4 py-2 font-semibold rounded-full transition-colors"
                 style={{ background: 'var(--blue-accent)', color: 'white' }}
               >
@@ -342,10 +342,14 @@ export default function Dashboard() {
                   </div>
                 ))
               : topTracks.map((track, index) => (
-                  <div
+                  <a
                     key={track.id}
-                    className="p-4 flex items-center gap-3 transition-colors group"
-                    style={{ borderBottom: '1px solid var(--border-light)' }}
+                    href={`https://open.spotify.com/track/${track.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Open in Spotify"
+                    className="p-4 flex items-center gap-3 transition-colors group no-underline"
+                    style={{ borderBottom: '1px solid var(--border-light)', color: 'inherit' }}
                     onMouseOver={(e) => e.currentTarget.style.background = 'var(--bg-warm)'}
                     onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
                   >
@@ -373,7 +377,7 @@ export default function Dashboard() {
                       </p>
                     </div>
                     <Play className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--text-light)' }} />
-                  </div>
+                  </a>
                 ))}
           </div>
         </div>
@@ -405,10 +409,14 @@ export default function Dashboard() {
                   </div>
                 ))
               : topArtists.map((artist, index) => (
-                  <div
+                  <a
                     key={artist.id}
-                    className="p-4 flex items-center gap-3 transition-colors"
-                    style={{ borderBottom: '1px solid var(--border-light)' }}
+                    href={`https://open.spotify.com/artist/${artist.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Open in Spotify"
+                    className="p-4 flex items-center gap-3 transition-colors no-underline"
+                    style={{ borderBottom: '1px solid var(--border-light)', color: 'inherit' }}
                     onMouseOver={(e) => e.currentTarget.style.background = 'var(--bg-warm)'}
                     onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
                   >
@@ -435,7 +443,7 @@ export default function Dashboard() {
                         {artist.genres.slice(0, 2).join(", ") || "No genres"}
                       </p>
                     </div>
-                  </div>
+                  </a>
                 ))}
           </div>
         </div>
@@ -467,10 +475,14 @@ export default function Dashboard() {
                   </div>
                 ))
               : recentTracks.map((track, index) => (
-                  <div
+                  <a
                     key={`${track.id}-${index}`}
-                    className="p-4 flex items-center gap-3 transition-colors"
-                    style={{ borderBottom: '1px solid var(--border-light)' }}
+                    href={`https://open.spotify.com/track/${track.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Open in Spotify"
+                    className="p-4 flex items-center gap-3 transition-colors no-underline"
+                    style={{ borderBottom: '1px solid var(--border-light)', color: 'inherit' }}
                     onMouseOver={(e) => e.currentTarget.style.background = 'var(--bg-warm)'}
                     onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
                   >
@@ -497,7 +509,7 @@ export default function Dashboard() {
                     <span className="text-xs" style={{ color: 'var(--text-light)' }}>
                       {formatPlayedAt(track.played_at)}
                     </span>
-                  </div>
+                  </a>
                 ))}
           </div>
         </div>

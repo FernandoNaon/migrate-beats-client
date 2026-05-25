@@ -5,7 +5,8 @@ import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import Callback from "./pages/Callback";
 import Dashboard from "./pages/Dashboard";
-import Playlists from "./pages/Playlists";
+import Migrate from "./pages/Migrate";
+import PlaylistManager from "./pages/PlaylistManager";
 import LikedSongs from "./pages/LikedSongs";
 import Settings from "./pages/Settings";
 
@@ -19,7 +20,9 @@ function App() {
             <Route path="/callback" element={<Callback />} />
             <Route element={<Layout />}>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/playlists" element={<Playlists />} />
+              <Route path="/migrate" element={<Migrate />} />
+              <Route path="/playlists" element={<Navigate to="/migrate" replace />} />
+              <Route path="/playlist-manager" element={<PlaylistManager />} />
               <Route path="/liked-songs" element={<LikedSongs />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
