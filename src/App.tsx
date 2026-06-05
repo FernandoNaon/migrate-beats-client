@@ -7,6 +7,7 @@ import Callback from "./pages/Callback";
 import Dashboard from "./pages/Dashboard";
 import Migrate from "./pages/Migrate";
 import PlaylistManager from "./pages/PlaylistManager";
+import Archaeologist from "./pages/Archaeologist";
 import LikedSongs from "./pages/LikedSongs";
 import Settings from "./pages/Settings";
 
@@ -23,6 +24,7 @@ function App() {
               <Route path="/migrate" element={<Migrate />} />
               <Route path="/playlists" element={<Navigate to="/migrate" replace />} />
               <Route path="/playlist-manager" element={<PlaylistManager />} />
+              <Route path="/archaeologist" element={<Archaeologist />} />
               <Route path="/liked-songs" element={<LikedSongs />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
