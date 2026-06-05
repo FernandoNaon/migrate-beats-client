@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, ArrowRightLeft, Heart, Settings, LogOut, Disc3, LayoutGrid } from "lucide-react";
+import { LayoutDashboard, ArrowRightLeft, Heart, Settings, LogOut, Disc3, LayoutGrid, ScanSearch } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import ThemeToggle from "./ThemeToggle";
 
@@ -7,6 +7,7 @@ const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/migrate", icon: ArrowRightLeft, label: "Migrate" },
   { to: "/playlist-manager", icon: LayoutGrid, label: "Manager" },
+  { to: "/archaeologist", icon: ScanSearch, label: "Archaeologist" },
   { to: "/liked-songs", icon: Heart, label: "Liked Songs" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];
