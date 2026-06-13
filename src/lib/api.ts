@@ -1,14 +1,33 @@
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:5000";
 
+const SESSION_TOKEN_KEY = "session_token";
+
+export function getSessionToken(): string | null {
+  return localStorage.getItem(SESSION_TOKEN_KEY);
+}
+export function setSessionToken(token: string) {
+  localStorage.setItem(SESSION_TOKEN_KEY, token);
+}
+export function clearSessionToken() {
+  localStorage.removeItem(SESSION_TOKEN_KEY);
+}
+
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const token = getSessionToken();
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
   });
+
+  if (response.status === 401) {
+    // Session invalid/expired — drop it so the app can route back to login.
+    clearSessionToken();
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: "Request failed" }));
@@ -22,6 +41,39 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
 
 export async function getSpotifyLoginUrl(): Promise<{ auth_url: string }> {
   return fetchApi("/login");
+}
+
+// ==================== SESSION AUTH (refactored) ====================
+
+export interface AuthMePayload {
+  spotify_user: SpotifyUser;
+  app_user: AppUser;
+}
+
+/** Exchange the OAuth code ONCE for a session token + profile. Stores the token. */
+export async function exchangeSpotifyCode(
+  code: string
+): Promise<{ session_token: string } & AuthMePayload> {
+  const result = await fetchApi<{ session_token: string } & AuthMePayload>(
+    "/auth/spotify/exchange",
+    { method: "POST", body: JSON.stringify({ code }) }
+  );
+  if (result.session_token) setSessionToken(result.session_token);
+  return result;
+}
+
+/** Fetch the current authed user's profile + tier + usage (session via Bearer). */
+export async function getAuthMe(): Promise<AuthMePayload> {
+  return fetchApi("/auth/me", { method: "POST", body: JSON.stringify({}) });
+}
+
+/** Revoke the current session server-side and clear the local token. */
+export async function logoutSession(): Promise<{ success: boolean }> {
+  try {
+    return await fetchApi("/auth/logout", { method: "POST", body: JSON.stringify({}) });
+  } finally {
+    clearSessionToken();
+  }
 }
 
 // ==================== SPOTIFY USER ====================
@@ -251,6 +303,24 @@ export async function moveTracksBetweenPlaylists(opts: MoveTracksOptions): Promi
 
 export async function deleteSpotifyPlaylist(code: string, playlistId: string): Promise<{ success: boolean }> {
   return fetchApi("/playlist/delete", {
+    method: "POST",
+    body: JSON.stringify({ code, playlist_id: playlistId }),
+  });
+}
+
+export interface PlaylistGenre {
+  genre: string;
+  count: number;
+  sample_artists: string[];
+}
+
+export interface PlaylistGenresResponse {
+  genres: PlaylistGenre[];
+  total_artists: number;
+}
+
+export async function fetchPlaylistGenres(code: string, playlistId: string): Promise<PlaylistGenresResponse> {
+  return fetchApi("/playlist/genres", {
     method: "POST",
     body: JSON.stringify({ code, playlist_id: playlistId }),
   });
